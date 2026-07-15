@@ -1,0 +1,1517 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DEMO — יומן פגישות</title>
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+  <style>
+    :root {
+      --bg:        #F5EDE0;
+      --card:      #FFF8F0;
+      --primary:   #7C4A1E;
+      --primary-h: #5C3410;
+      --gold:      #C4956A;
+      --gold-h:    #A87A52;
+      --text:      #3D2B1F;
+      --muted:     #9C7A5A;
+      --border:    #E8D5BE;
+      --hover-bg:  #F0E0CC;
+      --row-alt:   #FBF3EA;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+      background: var(--bg); color: var(--text); direction: rtl;
+    }
+
+    /* ── LOGIN ─────────────────────────────────────── */
+    #login-screen {
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh;
+      background: linear-gradient(145deg, #4A2810 0%, #8B5030 50%, #C4956A 100%);
+    }
+    .login-box {
+      background: var(--card); padding: 44px 38px; border-radius: 20px;
+      box-shadow: 0 28px 70px rgba(60,30,10,.35); text-align: center; width: 300px;
+      border: 1px solid var(--border);
+    }
+    .login-logo { font-size: 2.4rem; margin-bottom: 10px; }
+    .login-box h1 { font-size: 1.35rem; color: var(--primary); margin-bottom: 4px; font-weight: 700; }
+    .login-box p  { color: var(--muted); font-size: .88rem; margin-bottom: 26px; }
+    .login-box input {
+      width: 100%; padding: 11px 14px; border: 2px solid var(--border); border-radius: 10px;
+      font-size: 1rem; text-align: center; direction: ltr; margin-bottom: 12px;
+      background: white; transition: border-color .2s; color: var(--text);
+    }
+    .login-box input:focus { outline: none; border-color: var(--gold); }
+    .login-box button {
+      width: 100%; padding: 12px; background: var(--primary); color: #FFF8F0;
+      border: none; border-radius: 10px; font-size: 1rem; cursor: pointer;
+      font-weight: 600; letter-spacing: .03em; transition: background .2s;
+    }
+    .login-box button:hover { background: var(--primary-h); }
+    .login-error { color: #c0392b; font-size: .83rem; margin-top: 10px; display: none; }
+
+    /* ── APP SHELL ─────────────────────────────────── */
+    #app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+
+    /* ── HEADER ────────────────────────────────────── */
+    .app-header {
+      background: var(--card); padding: 10px 18px;
+      box-shadow: 0 2px 10px rgba(60,30,10,.12);
+      border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; gap: 10px; flex-wrap: wrap; z-index: 20; position: relative;
+    }
+    .header-brand {
+      font-size: 1.05rem; font-weight: 700; color: var(--primary);
+      white-space: nowrap; letter-spacing: .04em;
+      position: absolute; left: 0; right: 0;
+      text-align: center; pointer-events: none;
+    }
+    .date-nav { display: flex; align-items: center; gap: 8px; flex: 1; }
+    .date-nav button {
+      background: var(--hover-bg); border: 1px solid var(--border); border-radius: 8px;
+      width: 34px; height: 34px; font-size: 1rem; cursor: pointer; color: var(--primary);
+      display: flex; align-items: center; justify-content: center; transition: background .15s;
+    }
+    .date-nav button:hover { background: var(--border); }
+    #date-display {
+      font-size: 1.05rem; font-weight: 700; min-width: 210px;
+      text-align: center; color: var(--text);
+    }
+    .btn-today {
+      background: var(--primary); color: #FFF8F0; border: none; border-radius: 8px;
+      padding: 6px 14px; font-size: .83rem; font-weight: 600; cursor: pointer;
+      transition: background .2s; white-space: nowrap;
+    }
+    .btn-today:hover { background: var(--primary-h); }
+
+    /* View toggle */
+    .view-toggle {
+      display: flex; background: var(--hover-bg); border-radius: 9px;
+      padding: 3px; gap: 2px; border: 1px solid var(--border);
+    }
+    .view-toggle button {
+      background: none; border: none; border-radius: 7px;
+      padding: 5px 13px; font-size: .83rem; cursor: pointer;
+      color: var(--muted); transition: all .15s; white-space: nowrap; font-family: inherit;
+    }
+    .view-toggle button.active {
+      background: var(--card); color: var(--primary);
+      font-weight: 700; box-shadow: 0 1px 4px rgba(60,30,10,.15);
+    }
+
+    .filter-wrap { display: flex; align-items: center; gap: 6px; }
+    .filter-wrap label { font-size: .82rem; color: var(--muted); }
+    .filter-wrap select {
+      padding: 6px 10px; border: 1px solid var(--border); border-radius: 8px;
+      font-size: .88rem; cursor: pointer; background: var(--card); color: var(--text);
+    }
+    .btn-icon {
+      background: var(--hover-bg); border: 1px solid var(--border); border-radius: 8px;
+      width: 34px; height: 34px; font-size: 1.1rem; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; transition: background .15s;
+    }
+    .btn-icon:hover { background: var(--border); }
+    .btn-logout {
+      background: none; border: 1px solid var(--border); border-radius: 8px;
+      padding: 5px 11px; font-size: .8rem; color: var(--muted);
+      cursor: pointer; transition: all .2s;
+    }
+    .btn-logout:hover { border-color: #c0392b; color: #c0392b; }
+
+    /* ── CALENDAR BODY ─────────────────────────────── */
+    .calendar-body { display: flex; flex: 1; overflow: hidden; }
+    .time-gutter {
+      width: 52px; flex-shrink: 0; background: var(--row-alt);
+      border-left: 1px solid var(--border); overflow: hidden; padding-top: 44px;
+    }
+    .time-label {
+      height: 60px; display: flex; align-items: flex-start; justify-content: center;
+      font-size: .72rem; color: var(--muted); padding-top: 4px; border-top: 1px solid var(--border);
+    }
+
+    /* ── DAY VIEW GRID ─────────────────────────────── */
+    .designers-grid { display: flex; flex: 1; overflow-x: auto; overflow-y: auto; }
+    .designer-col { flex: 1; min-width: 155px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg); }
+
+    /* ── WEEK VIEW GRID ────────────────────────────── */
+    .week-grid { display: flex; flex: 1; overflow-x: auto; overflow-y: auto; }
+    .week-col { flex: 1; min-width: 110px; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--bg); }
+
+    /* shared column header */
+    .col-header {
+      height: 44px; flex-shrink: 0;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      background: var(--card); border-bottom: 2px solid var(--border);
+      position: sticky; top: 0; z-index: 10;
+      font-size: .8rem; color: var(--muted); gap: 1px;
+    }
+    .col-header.today-col { border-bottom-color: var(--gold); background: #FFF3E6; }
+    .col-header .col-day-name { font-size: .75rem; }
+    .col-header .col-date-num {
+      font-size: 1rem; font-weight: 700; color: var(--text);
+      width: 28px; height: 28px; display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+    }
+    .col-header.today-col .col-date-num { background: var(--gold); color: white; }
+
+    /* designer column header (day view) */
+    .designer-header {
+      height: 44px; flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: .93rem; background: var(--card);
+      border-bottom: 3px solid; position: sticky; top: 0; z-index: 10;
+    }
+
+    .col-slots { position: relative; flex: 1; }
+    .slot-line { position: absolute; width: 100%; pointer-events: none; }
+    .slot-line.hour { border-top: 1px solid var(--border); }
+    .slot-line.half { border-top: 1px dashed #EDD9C0; }
+    .slot-click { position: absolute; width: 100%; height: 30px; cursor: pointer; transition: background .1s; }
+    .slot-click:hover { background: rgba(196,149,106,.1); }
+
+    /* ── APPOINTMENTS ──────────────────────────────── */
+    .appointment {
+      position: absolute; right: 3px; left: 20%;
+      border-radius: 7px; padding: 4px 7px; font-size: .76rem;
+      cursor: pointer; overflow: hidden; color: white;
+      box-shadow: 0 2px 6px rgba(60,30,10,.25);
+      transition: transform .1s, box-shadow .1s; z-index: 5;
+    }
+    .appointment:hover { transform: scale(1.025); box-shadow: 0 4px 12px rgba(60,30,10,.3); }
+    .apt-time   { font-size: .67rem; opacity: .88; }
+    .apt-client { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .apt-designer { font-size: .67rem; opacity: .82; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .apt-notes  { font-size: .67rem; opacity: .77; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* ── MODALS ────────────────────────────────────── */
+    .modal-overlay {
+      display: none; position: fixed; inset: 0;
+      background: rgba(40,20,5,.5); z-index: 200;
+      align-items: center; justify-content: center;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal {
+      background: var(--card); border-radius: 18px; padding: 28px;
+      width: 380px; max-width: 94vw; border: 1px solid var(--border);
+      box-shadow: 0 28px 64px rgba(60,30,10,.28); animation: pop .18s ease;
+    }
+    @keyframes pop { from { transform: scale(.94); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+    .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
+    .modal-header h3 { font-size: 1.05rem; color: var(--primary); font-weight: 700; }
+    .btn-close { background: none; border: none; font-size: 1.4rem; cursor: pointer; color: var(--muted); line-height: 1; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: .82rem; font-weight: 600; color: var(--muted); margin-bottom: 5px; }
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%; padding: 9px 11px; border: 1.5px solid var(--border); border-radius: 9px;
+      font-size: .93rem; font-family: inherit; direction: rtl;
+      background: white; color: var(--text); transition: border-color .2s;
+    }
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus { outline: none; border-color: var(--gold); }
+    .form-group textarea { resize: vertical; min-height: 68px; }
+    .time-row { display: flex; gap: 10px; }
+    .time-row .form-group { flex: 1; }
+    .modal-actions { display: flex; gap: 8px; margin-top: 18px; }
+    .btn-save {
+      flex: 1; padding: 10px; background: var(--primary); color: #FFF8F0;
+      border: none; border-radius: 9px; font-size: .95rem; font-weight: 600;
+      cursor: pointer; font-family: inherit; transition: background .2s;
+    }
+    .btn-save:hover { background: var(--primary-h); }
+    .btn-delete {
+      padding: 10px 15px; background: #fdf0ee; color: #c0392b;
+      border: 1px solid #f5c6c0; border-radius: 9px; font-size: .95rem;
+      cursor: pointer; font-family: inherit; transition: background .2s;
+    }
+    .btn-delete:hover { background: #fad9d5; }
+    .btn-whatsapp {
+      width: 100%; margin-top: 10px; padding: 10px;
+      background: #e8f5e9; color: #2e7d32;
+      border: 1px solid #a5d6a7; border-radius: 9px;
+      font-size: .92rem; font-weight: 600; cursor: pointer;
+      font-family: inherit; transition: background .2s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .btn-whatsapp:hover { background: #c8e6c9; }
+
+    /* ── SETTINGS MODAL ────────────────────────────── */
+    .settings-modal { width: 440px; }
+    .settings-modal h3 { color: var(--primary) !important; }
+    .designer-row {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 0; border-bottom: 1px solid var(--border);
+    }
+    .designer-row:last-of-type { border-bottom: none; }
+    .designer-row input[type="text"] {
+      flex: 1; padding: 8px 10px; border: 1.5px solid var(--border);
+      border-radius: 8px; font-size: .93rem; font-family: inherit; direction: rtl;
+      background: white; color: var(--text);
+    }
+    .designer-row input[type="text"]:focus { outline: none; border-color: var(--gold); }
+    .color-dot {
+      width: 28px; height: 28px; border-radius: 50%;
+      border: 2px solid var(--border); cursor: pointer; flex-shrink: 0; transition: transform .15s;
+    }
+    .color-dot:hover { transform: scale(1.15); }
+    .color-picker-hidden { display: none; }
+    .btn-remove-designer {
+      background: none; border: none; color: var(--border);
+      font-size: 1.3rem; cursor: pointer; padding: 0 4px;
+      transition: color .15s; flex-shrink: 0; line-height: 1;
+    }
+    .btn-remove-designer:hover { color: #c0392b; }
+    .designer-order-btns { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+    .btn-order {
+      background: none; border: 1px solid var(--border); color: var(--muted);
+      font-size: .7rem; cursor: pointer; padding: 1px 5px; border-radius: 4px;
+      line-height: 1.4; transition: all .15s; font-family: inherit;
+    }
+    .btn-order:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-order:disabled { opacity: .25; cursor: default; }
+    .btn-add-designer {
+      display: flex; align-items: center; gap: 6px;
+      background: none; border: 2px dashed var(--border); border-radius: 9px;
+      padding: 8px 14px; width: 100%; margin-top: 12px;
+      font-size: .88rem; color: var(--muted); cursor: pointer;
+      transition: all .2s; font-family: inherit;
+    }
+    .btn-add-designer:hover { border-color: var(--gold); color: var(--gold); }
+    .settings-note { font-size: .78rem; color: var(--muted); margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--border); }
+
+    /* ── TRASH ─────────────────────────────────────── */
+    .trash-section { margin-top: 14px; border-top: 1px solid var(--border); padding-top: 12px; }
+    .trash-toggle-btn {
+      background: none; border: none; color: var(--muted); font-size: .88rem;
+      cursor: pointer; font-family: inherit; padding: 4px 0; width: 100%;
+      text-align: right; display: flex; align-items: center; gap: 6px;
+      transition: color .15s;
+    }
+    .trash-toggle-btn:hover { color: var(--primary); }
+    .trash-panel { margin-top: 10px; }
+    .trash-tabs { display: flex; gap: 6px; margin-bottom: 10px; }
+    .trash-tab {
+      flex: 1; padding: 7px 10px; font-size: .83rem; font-family: inherit;
+      border: 1.5px solid var(--border); border-radius: 8px; cursor: pointer;
+      background: var(--bg); color: var(--muted); transition: all .15s;
+    }
+    .trash-tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+    .trash-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 10px; border-radius: 9px; border: 1px solid var(--border);
+      margin-bottom: 7px; background: var(--card); font-size: .88rem;
+    }
+    .trash-row .trash-info { flex: 1; }
+    .trash-row .trash-name { font-weight: 600; color: var(--text); }
+    .trash-row .trash-meta { font-size: .78rem; color: var(--muted); margin-top: 2px; }
+    .trash-restore-btn {
+      padding: 5px 10px; background: #e8f5e9; color: #2e7d32;
+      border: 1px solid #c8e6c9; border-radius: 7px; font-size: .8rem;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .trash-restore-btn:hover { background: #c8e6c9; }
+    .trash-perm-btn {
+      padding: 5px 10px; background: #fdf0ee; color: #c0392b;
+      border: 1px solid #f5c6c0; border-radius: 7px; font-size: .8rem;
+      cursor: pointer; font-family: inherit; white-space: nowrap;
+    }
+    .trash-perm-btn:hover { background: #fad9d5; }
+    .trash-empty { text-align: center; color: var(--muted); padding: 18px; font-size: .88rem; }
+
+    /* ── SEARCH RESULTS ────────────────────────────── */
+    .search-result {
+      display: flex; align-items: center; gap: 12px;
+      padding: 10px 12px; border-radius: 9px; cursor: pointer;
+      border: 1px solid var(--border); margin-bottom: 8px;
+      background: white; transition: background .15s;
+    }
+    .search-result:hover { background: var(--hover-bg); }
+    .search-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+    .search-info { flex: 1; }
+    .search-client { font-weight: 700; font-size: .95rem; color: var(--text); }
+    .search-meta { font-size: .8rem; color: var(--muted); margin-top: 2px; }
+    .search-empty { text-align: center; color: var(--muted); padding: 24px; font-size: .9rem; }
+
+    /* ── MOBILE ────────────────────────────────────── */
+    @media (max-width: 600px) {
+      .header-brand { font-size: .85rem; }
+      #date-display { font-size: .88rem; min-width: 140px; }
+      .designer-col, .week-col { min-width: 110px; }
+      .filter-wrap label { display: none; }
+      .settings-modal { width: 95vw; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── LOGIN ──────────────────────────────────────── -->
+<div id="login-screen">
+  <div class="login-box">
+    <div class="login-logo">📅</div>
+    <h1>אביה עיצובים בעץ</h1>
+    <p>יומן פגישות</p>
+    <input type="password" id="pwd-input" placeholder="סיסמה" autocomplete="current-password">
+    <button id="login-btn">כניסה</button>
+    <div class="login-error" id="login-error">סיסמה שגויה, נסה שוב</div>
+  </div>
+</div>
+
+<!-- ── MAIN APP ────────────────────────────────────── -->
+<div style="background:#c0392b;color:white;text-align:center;padding:5px;font-size:.85rem;font-weight:700;letter-spacing:1px">
+  DEMO — סביבת הדגמה בלבד
+</div>
+<div id="app">
+  <div class="app-header">
+    <span class="header-brand">אביה עיצובים בעץ</span>
+    <div class="date-nav">
+      <button id="btn-prev">&#8594;</button>
+      <span id="date-display"></span>
+      <button id="btn-next">&#8592;</button>
+    </div>
+    <button class="btn-today" id="btn-today">היום</button>
+    <div class="view-toggle">
+      <button id="vt-day" class="active">יומי</button>
+      <button id="vt-week">שבועי</button>
+    </div>
+    <div class="filter-wrap">
+      <label>סינון:</label>
+      <select id="designer-filter"></select>
+    </div>
+    <button class="btn-icon" id="btn-search" title="חיפוש לקוח">🔍</button>
+    <button class="btn-icon" id="btn-settings" title="הגדרות">⚙️</button>
+    <button class="btn-logout" id="btn-backup" title="הורד גיבוי">⬇</button>
+    <button class="btn-logout" id="btn-logout">יציאה</button>
+  </div>
+
+  <div class="calendar-body">
+    <div class="time-gutter" id="time-gutter"></div>
+    <div class="designers-grid" id="designers-grid"></div>
+    <div class="week-grid" id="week-grid" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── APPOINTMENT MODAL ──────────────────────────── -->
+<div class="modal-overlay" id="modal-overlay">
+  <div class="modal">
+    <div class="modal-header">
+      <h3 id="modal-title">פגישה חדשה</h3>
+      <button class="btn-close" id="modal-close">×</button>
+    </div>
+    <div class="form-group">
+      <label>יומן</label>
+      <select id="f-designer"></select>
+    </div>
+    <div class="form-group">
+      <label>שם לקוח / פרויקט</label>
+      <input type="text" id="f-client" placeholder="שם הלקוח">
+    </div>
+    <div class="form-group">
+      <label>טלפון לקוח</label>
+      <input type="tel" id="f-phone" placeholder="05XXXXXXXXX" dir="ltr" style="text-align:right" oninput="this.value=this.value.replace(/\D/g,'');updateWhatsAppBtn()">
+    </div>
+    <div class="time-row">
+      <div class="form-group">
+        <label>שעת התחלה</label>
+        <div style="display:flex;gap:4px;direction:ltr">
+          <select id="f-start-h" style="flex:1"></select>
+          <select id="f-start-m" style="flex:1"></select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>שעת סיום</label>
+        <div style="display:flex;gap:4px;direction:ltr">
+          <select id="f-end-h" style="flex:1"></select>
+          <select id="f-end-m" style="flex:1"></select>
+        </div>
+      </div>
+    </div>
+    <div class="form-group" id="fg-address" style="display:none">
+      <label>כתובת התקנה</label>
+      <input type="text" id="f-address" placeholder="רחוב, עיר...">
+    </div>
+    <div class="form-group">
+      <label>הערות</label>
+      <textarea id="f-notes" placeholder="פרטים נוספים..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>סיכום פגישה</label>
+      <textarea id="f-summary" placeholder="מה סוכם, צעדים הבאים..."></textarea>
+    </div>
+    <div class="modal-actions">
+      <button class="btn-save" id="btn-save">שמירה</button>
+      <button class="btn-delete" id="btn-delete" style="display:none">מחיקה</button>
+    </div>
+    <button class="btn-whatsapp" id="btn-whatsapp" style="display:none" onclick="sendWhatsApp()">
+      <span>📲</span> שלח תזכורת WhatsApp
+    </button>
+  </div>
+</div>
+
+<!-- ── SEARCH MODAL ───────────────────────────────── -->
+<div class="modal-overlay" id="search-overlay">
+  <div class="modal" style="width:460px">
+    <div class="modal-header">
+      <h3>🔍 חיפוש לקוח</h3>
+      <button class="btn-close" id="search-close">×</button>
+    </div>
+    <div class="form-group" style="display:flex;gap:8px;margin-bottom:8px">
+      <input type="text" id="search-input" placeholder="שם לקוח או מספר טלפון..." style="flex:1">
+      <button class="btn-save" style="flex:0;padding:9px 16px;white-space:nowrap" onclick="doSearch()">חפש</button>
+    </div>
+    <div id="search-results"></div>
+  </div>
+</div>
+
+<!-- ── ADMIN PASSWORD MODAL ───────────────────────── -->
+<div class="modal-overlay" id="admin-pwd-overlay">
+  <div class="modal" style="width:300px;text-align:center">
+    <div class="modal-header" style="justify-content:center;border-bottom:none;margin-bottom:8px">
+      <h3>🔒 סיסמת מנהל</h3>
+    </div>
+    <div class="form-group" style="margin-bottom:12px">
+      <input type="password" id="admin-pwd-input" placeholder="הכנס סיסמה" style="text-align:center;direction:ltr">
+    </div>
+    <div class="login-error" id="admin-pwd-error" style="margin-bottom:10px">סיסמה שגויה</div>
+    <div class="modal-actions">
+      <button class="btn-save" id="admin-pwd-confirm">כניסה</button>
+      <button class="btn-delete" id="admin-pwd-cancel">ביטול</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── SETTINGS MODAL ─────────────────────────────── -->
+<div class="modal-overlay" id="settings-overlay">
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <h3>⚙️ ניהול יומנים</h3>
+      <button class="btn-close" id="settings-close">×</button>
+    </div>
+    <div id="designers-list"></div>
+    <button class="btn-add-designer" id="btn-add-designer">＋ הוספת יומן</button>
+    <p class="settings-note">לחץ על העיגול הצבעוני לשינוי צבע</p>
+    <div class="modal-actions">
+      <button class="btn-save" id="settings-save">שמירה</button>
+    </div>
+    <div class="modal-actions" style="margin-top:8px;gap:8px">
+      <button class="btn-save" style="background:var(--gold)" onclick="downloadBackup()">⬇ הורד גיבוי</button>
+      <button class="btn-save" style="background:#6B8E5A" onclick="document.getElementById('restore-file-input').click()">⬆ שחזר מגיבוי</button>
+      <input type="file" id="restore-file-input" accept=".json" style="display:none" onchange="restoreBackup(this)">
+    </div>
+    <div class="trash-section">
+      <button class="trash-toggle-btn" onclick="toggleTrash()">🗑️ פח מחזור</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── TRASH MODAL ─────────────────────────────────── -->
+<div class="modal-overlay" id="trash-overlay">
+  <div class="modal settings-modal">
+    <div class="modal-header">
+      <h3>🗑️ פח מחזור</h3>
+      <button class="btn-close" onclick="closeTrash()">×</button>
+    </div>
+    <div class="trash-tabs">
+      <button class="trash-tab active" id="trash-tab-designers" onclick="showTrashTab('designers')">יומנים שנמחקו</button>
+      <button class="trash-tab" id="trash-tab-apts" onclick="showTrashTab('apts')">פגישות שנמחקו</button>
+    </div>
+    <div id="trash-designers-list" style="margin-top:10px"></div>
+    <div id="trash-apts-list" style="display:none;margin-top:10px"></div>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp }       from "https://www.gstatic.com/firebasejs/12.16.0/firebase-app.js";
+import { getAuth, signInAnonymously, signOut, onAuthStateChanged }
+                                from "https://www.gstatic.com/firebasejs/12.16.0/firebase-auth.js";
+import { getFirestore, collection, doc, query, where,
+         onSnapshot, addDoc, updateDoc, deleteDoc, setDoc, getDoc, getDocs }
+                                from "https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js";
+
+/* ═══════════════════════════════════════════════════
+   ⚙️  שנה כאן רק את הסיסמה
+   ═══════════════════════════════════════════════════ */
+const APP_PASSWORD   = "demo";   // ← סיסמת כניסה לאפליקציה
+const ADMIN_PASSWORD = "admin";  // ← סיסמת כניסה להגדרות
+
+// ─── EmailJS — מלא את הפרטים אחרי ההרשמה ───────────
+const EMAILJS_PUBLIC_KEY  = "6d_bWSpIY9nijK9fU";
+const EMAILJS_SERVICE_ID  = "service_yp9sxfn";
+const EMAILJS_TEMPLATE_ID = "template_g12apr8";
+// ─────────────────────────────────────────────────────
+
+const DEFAULT_DESIGNERS = [
+  { id: "1", name: "מעצבת 1", color: "#8B4513" },
+  { id: "2", name: "מעצבת 2", color: "#C4956A" },
+  { id: "3", name: "מעצבת 3", color: "#6B8E5A" },
+];
+
+const START_HOUR = 8;
+const END_HOUR   = 20;
+const HOUR_PX    = 60;
+/* ═══════════════════════════════════════════════════ */
+
+const firebaseConfig = {
+  apiKey:            "AIzaSyApnp1xNJg-L2suwMjCxSfvaXEPXlDc5uM",
+  authDomain:        "dmo-next1-cal.firebaseapp.com",
+  projectId:         "dmo-next1-cal",
+  storageBucket:     "dmo-next1-cal.firebasestorage.app",
+  messagingSenderId: "521114443714",
+  appId:             "1:521114443714:web:62f46515fa28c9230a005b",
+};
+
+const fbApp = initializeApp(firebaseConfig);
+const auth  = getAuth(fbApp);
+const db    = getFirestore(fbApp);
+
+/* ─── State ─────────────────────────────────────── */
+let DESIGNERS         = [];
+let DELETED_DESIGNERS = [];
+let currentDate   = today();
+let activeFilter  = "all";
+let viewMode      = "day";   // "day" | "week"
+let editingId     = null;
+let modalDateStr  = "";      // YYYY-MM-DD for the appointment being created/edited
+let unsubscribe   = null;
+let lastApts      = [];
+
+const DAYS_HE    = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+const DAYS_SHORT = ["א׳","ב׳","ג׳","ד׳","ה׳","ו׳","ש׳"];
+const MONTHS_HE  = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+
+function today() { const d = new Date(); d.setHours(0,0,0,0); return d; }
+
+/* ─── Auth ───────────────────────────────────────── */
+document.getElementById("login-btn").addEventListener("click", doLogin);
+document.getElementById("pwd-input").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
+document.getElementById("btn-logout").addEventListener("click", () => { if (unsubscribe) unsubscribe(); signOut(auth); });
+
+function doLogin() {
+  const val = document.getElementById("pwd-input").value;
+  const err = document.getElementById("login-error");
+  if (val === APP_PASSWORD) {
+    err.style.display = "none";
+    signInAnonymously(auth).catch(() => {
+      err.textContent = "שגיאת חיבור. בדוק שהאימות האנונימי הופעל ב-Firebase.";
+      err.style.display = "block";
+    });
+  } else {
+    err.style.display = "block";
+    document.getElementById("pwd-input").value = "";
+    document.getElementById("pwd-input").focus();
+  }
+}
+
+onAuthStateChanged(auth, user => {
+  if (user) {
+    document.getElementById("login-screen").style.display = "none";
+    document.getElementById("app").style.display = "flex";
+    initApp();
+  } else {
+    document.getElementById("login-screen").style.display = "flex";
+    document.getElementById("app").style.display = "none";
+    document.getElementById("pwd-input").value = "";
+  }
+});
+
+/* ─── Init ───────────────────────────────────────── */
+async function initApp() {
+  await loadDesigners();
+  buildTimeSelects();
+  buildTimeGutter();
+  buildFilterSelect();
+  buildModalDesigners();
+  renderDateDisplay();
+  rebuildAndSubscribe();
+  bindEvents();
+}
+
+function bindEvents() {
+  document.getElementById("btn-prev").addEventListener("click", () => navigate(-1));
+  document.getElementById("btn-next").addEventListener("click", () => navigate(1));
+  document.getElementById("btn-today").addEventListener("click", () => {
+    currentDate = today(); renderDateDisplay(); rebuildAndSubscribe();
+  });
+  document.getElementById("designer-filter").addEventListener("change", e => {
+    activeFilter = e.target.value;
+    if (viewMode === "day") { buildDayGrid(); renderApts(lastApts); }
+    else                    { buildWeekGrid(); renderWeekApts(lastApts); }
+  });
+  // View toggle
+  document.getElementById("vt-day").addEventListener("click", () => setView("day"));
+  document.getElementById("vt-week").addEventListener("click", () => setView("week"));
+  // Appointment modal
+  document.getElementById("modal-close").addEventListener("click", closeModal);
+  document.getElementById("modal-overlay").addEventListener("click", e => {
+    if (e.target === document.getElementById("modal-overlay")) closeModal();
+  });
+  document.getElementById("btn-save").addEventListener("click", saveApt);
+  document.getElementById("btn-delete").addEventListener("click", deleteApt);
+  // Search
+  document.getElementById("btn-search").addEventListener("click", openSearch);
+  document.getElementById("search-close").addEventListener("click", closeSearch);
+  document.getElementById("search-overlay").addEventListener("click", e => {
+    if (e.target === document.getElementById("search-overlay")) closeSearch();
+  });
+  document.getElementById("search-input").addEventListener("keydown", e => { if (e.key === "Enter") doSearch(); });
+  // Admin password modal
+  document.getElementById("btn-settings").addEventListener("click", openAdminPrompt);
+  document.getElementById("btn-backup").addEventListener("click", downloadBackup);
+  document.getElementById("admin-pwd-confirm").addEventListener("click", confirmAdminPwd);
+  document.getElementById("admin-pwd-cancel").addEventListener("click", closeAdminPrompt);
+  document.getElementById("admin-pwd-input").addEventListener("keydown", e => { if (e.key === "Enter") confirmAdminPwd(); });
+  // Settings modal
+  document.getElementById("settings-close").addEventListener("click", closeSettings);
+  document.getElementById("settings-overlay").addEventListener("click", e => {
+    if (e.target === document.getElementById("settings-overlay")) closeSettings();
+  });
+  document.getElementById("settings-save").addEventListener("click", saveSettings);
+  document.getElementById("btn-add-designer").addEventListener("click", addDesignerRow);
+}
+
+/* ─── View switching ─────────────────────────────── */
+function setView(mode) {
+  viewMode = mode;
+  document.getElementById("vt-day").classList.toggle("active", mode === "day");
+  document.getElementById("vt-week").classList.toggle("active", mode === "week");
+  document.getElementById("designers-grid").style.display = mode === "day"  ? "" : "none";
+  document.getElementById("week-grid").style.display      = mode === "week" ? "" : "none";
+  renderDateDisplay();
+  rebuildAndSubscribe();
+}
+
+function rebuildAndSubscribe() {
+  if (viewMode === "day") { buildDayGrid(); subscribeDay(); }
+  else                    { buildWeekGrid(); subscribeWeek(); }
+}
+
+/* ─── Navigation ─────────────────────────────────── */
+function navigate(delta) {
+  currentDate = new Date(currentDate);
+  currentDate.setDate(currentDate.getDate() + (viewMode === "week" ? delta * 7 : delta));
+  renderDateDisplay();
+  rebuildAndSubscribe();
+}
+
+function renderDateDisplay() {
+  const el = document.getElementById("date-display");
+  if (viewMode === "day") {
+    const d = currentDate;
+    el.textContent = `יום ${DAYS_HE[d.getDay()]}, ${d.getDate()} ב${MONTHS_HE[d.getMonth()]} ${d.getFullYear()}`;
+  } else {
+    const days = weekDays();
+    const s = days[0], e = days[5];
+    if (s.getMonth() === e.getMonth()) {
+      el.textContent = `${s.getDate()} – ${e.getDate()} ב${MONTHS_HE[s.getMonth()]} ${s.getFullYear()}`;
+    } else {
+      el.textContent = `${s.getDate()} ב${MONTHS_HE[s.getMonth()]} – ${e.getDate()} ב${MONTHS_HE[e.getMonth()]}`;
+    }
+  }
+}
+
+/* ─── Week helpers ───────────────────────────────── */
+function weekStart(d = currentDate) {
+  const s = new Date(d);
+  s.setDate(s.getDate() - s.getDay()); // Sunday
+  s.setHours(0,0,0,0);
+  return s;
+}
+function weekDays(d = currentDate) {
+  const s = weekStart(d);
+  return Array.from({length: 6}, (_, i) => {
+    const day = new Date(s); day.setDate(s.getDate() + i); return day;
+  });
+}
+
+/* ─── Date key ───────────────────────────────────── */
+function dateKey(d = currentDate) {
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+}
+function todayKey() { return dateKey(today()); }
+
+/* ─── Designers (Firestore) ─────────────────────── */
+async function loadDesigners() {
+  const ref = doc(db, "settings", "designers");
+  const snap = await getDoc(ref);
+  if (snap.exists()) {
+    DESIGNERS         = snap.data().list        || [];
+    DELETED_DESIGNERS = snap.data().deletedList || [];
+  } else {
+    DESIGNERS = DEFAULT_DESIGNERS; DELETED_DESIGNERS = [];
+    await setDoc(ref, { list: DESIGNERS, deletedList: [] });
+  }
+}
+
+/* ─── Time gutter ────────────────────────────────── */
+function buildTimeGutter() {
+  const g = document.getElementById("time-gutter");
+  g.innerHTML = "";
+  for (let h = START_HOUR; h <= END_HOUR; h++) {
+    const el = document.createElement("div");
+    el.className = "time-label";
+    el.textContent = `${String(h).padStart(2,"0")}:00`;
+    g.appendChild(el);
+  }
+}
+
+/* ─── Slot scaffold (reused by both views) ────────── */
+function buildSlots(container, onClickSlot) {
+  container.style.height = `${(END_HOUR - START_HOUR) * HOUR_PX}px`;
+  for (let h = START_HOUR; h < END_HOUR; h++) {
+    const offset = (h - START_HOUR) * HOUR_PX;
+    const ln = document.createElement("div"); ln.className = "slot-line hour"; ln.style.top = `${offset}px`;
+    const lh = document.createElement("div"); lh.className = "slot-line half"; lh.style.top = `${offset + HOUR_PX/2}px`;
+    container.appendChild(ln); container.appendChild(lh);
+  }
+  for (let h = START_HOUR; h < END_HOUR; h++) {
+    for (let half = 0; half < 2; half++) {
+      const zone = document.createElement("div");
+      zone.className = "slot-click";
+      zone.style.top = `${((h - START_HOUR) * 60 + half * 30) / 60 * HOUR_PX}px`;
+      const t = `${String(h).padStart(2,"0")}:${half === 0 ? "00" : "30"}`;
+      zone.addEventListener("click", () => onClickSlot(t));
+      container.appendChild(zone);
+    }
+  }
+}
+
+/* ─── Day view ───────────────────────────────────── */
+function buildDayGrid() {
+  const grid = document.getElementById("designers-grid");
+  grid.innerHTML = "";
+  const visible = visibleDesigners();
+  visible.forEach(d => {
+    const col = document.createElement("div");
+    col.className = "designer-col"; col.dataset.id = d.id;
+    if (d.name?.includes("התקנות")) col.style.background = "#EDE0D0";
+    const hdr = document.createElement("div");
+    hdr.className = "designer-header"; hdr.textContent = d.name;
+    hdr.style.borderColor = d.color; hdr.style.color = d.color;
+    col.appendChild(hdr);
+    const slots = document.createElement("div"); slots.className = "col-slots";
+    buildSlots(slots, t => openNew(d.id, t, dateKey()));
+    col.appendChild(slots); grid.appendChild(col);
+  });
+}
+
+function subscribeDay() {
+  if (unsubscribe) unsubscribe();
+  const q = query(collection(db, "appointments"), where("date", "==", dateKey()));
+  unsubscribe = onSnapshot(q, snap => {
+    lastApts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderApts(lastApts);
+  });
+}
+
+function renderApts(apts) {
+  document.querySelectorAll("#designers-grid .appointment").forEach(el => el.remove());
+  const ids = visibleDesigners().map(d => d.id);
+  apts.filter(a => ids.includes(a.designerId)).forEach(apt => {
+    const slots = document.querySelector(`#designers-grid .designer-col[data-id="${apt.designerId}"] .col-slots`);
+    if (!slots) return;
+    const designer = DESIGNERS.find(d => d.id === apt.designerId);
+    if (!designer) return;
+    placeAppointment(slots, apt, designer.color, false);
+  });
+}
+
+/* ─── Week view ──────────────────────────────────── */
+function buildWeekGrid() {
+  const grid = document.getElementById("week-grid");
+  grid.innerHTML = "";
+  const tk = todayKey();
+  weekDays().forEach(day => {
+    const dk = dateKey(day);
+    const col = document.createElement("div");
+    col.className = "week-col"; col.dataset.date = dk;
+
+    const hdr = document.createElement("div");
+    hdr.className = "col-header" + (dk === tk ? " today-col" : "");
+    hdr.innerHTML = `<span class="col-day-name">${DAYS_SHORT[day.getDay()]}</span>
+                     <span class="col-date-num">${day.getDate()}</span>`;
+    col.appendChild(hdr);
+
+    const slots = document.createElement("div"); slots.className = "col-slots";
+    buildSlots(slots, t => openNew(DESIGNERS[0]?.id || "", t, dk));
+    col.appendChild(slots); grid.appendChild(col);
+  });
+}
+
+function subscribeWeek() {
+  if (unsubscribe) unsubscribe();
+  const dateKeys = weekDays().map(d => dateKey(d));
+  const q = query(collection(db, "appointments"), where("date", "in", dateKeys));
+  unsubscribe = onSnapshot(q, snap => {
+    lastApts = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    renderWeekApts(lastApts);
+  }, err => console.error("week query error:", err));
+}
+
+function renderWeekApts(apts) {
+  document.querySelectorAll("#week-grid .appointment").forEach(el => el.remove());
+  const filterIds = activeFilter === "all" ? DESIGNERS.map(d => d.id) : [activeFilter];
+  const visible   = apts.filter(a => filterIds.includes(a.designerId));
+
+  // Group by date
+  const byDate = {};
+  visible.forEach(apt => { (byDate[apt.date] = byDate[apt.date] || []).push(apt); });
+
+  Object.entries(byDate).forEach(([date, dayApts]) => {
+    const slots = document.querySelector(`#week-grid .week-col[data-date="${date}"] .col-slots`);
+    if (!slots) return;
+    const layout = computeOverlapLayout(dayApts);
+    dayApts.forEach(apt => {
+      const designer = DESIGNERS.find(d => d.id === apt.designerId);
+      if (!designer) return;
+      const { col, total } = layout.get(apt.id);
+      placeAppointment(slots, apt, designer.color, true, col, total);
+    });
+  });
+}
+
+function computeOverlapLayout(apts) {
+  const sorted = [...apts].sort((a, b) => toMins(a.startTime) - toMins(b.startTime));
+  const cols   = []; // cols[i] = end time of last apt in column i
+  const result = new Map();
+  sorted.forEach(apt => {
+    const start = toMins(apt.startTime);
+    const end   = toMins(apt.endTime);
+    let placed  = false;
+    for (let i = 0; i < cols.length; i++) {
+      if (start >= cols[i]) { cols[i] = end; result.set(apt.id, { col: i, total: 0 }); placed = true; break; }
+    }
+    if (!placed) { cols.push(end); result.set(apt.id, { col: cols.length - 1, total: 0 }); }
+  });
+  const total = cols.length;
+  result.forEach(v => { v.total = total; });
+  return result;
+}
+
+/* ─── Shared appointment renderer ────────────────── */
+function placeAppointment(container, apt, color, showDesigner, col = 0, total = 1) {
+  const s = toMins(apt.startTime) - START_HOUR * 60;
+  const e = toMins(apt.endTime)   - START_HOUR * 60;
+  const top    = (s / 60) * HOUR_PX;
+  const height = Math.max(((e - s) / 60) * HOUR_PX, 24);
+
+  const el = document.createElement("div");
+  el.className = "appointment";
+  el.style.top    = `${top}px`;
+  el.style.height = `${height}px`;
+  el.style.background = color;
+
+  if (total > 1) {
+    const pct = 100 / total;
+    el.style.right = `${col * pct}%`;
+    el.style.width = `calc(${pct}% - 2px)`;
+    el.style.left  = "auto";
+  }
+
+  const designer = DESIGNERS.find(d => d.color === color);
+  el.innerHTML = `
+    <div class="apt-time">${apt.startTime} – ${apt.endTime}</div>
+    <div class="apt-client">${apt.clientName || ""}</div>
+    ${showDesigner && designer ? `<div class="apt-designer">${designer.name}</div>` : ""}
+    ${apt.notes ? `<div class="apt-notes">${apt.notes}</div>` : ""}
+  `;
+  el.addEventListener("click", ev => { ev.stopPropagation(); openEdit(apt); });
+  container.appendChild(el);
+}
+
+function toMins(t) { const [h, m] = t.split(":").map(Number); return h * 60 + m; }
+function visibleDesigners() {
+  return activeFilter === "all" ? DESIGNERS : DESIGNERS.filter(d => d.id === activeFilter);
+}
+
+/* ─── Filter & modal designers ──────────────────── */
+function buildFilterSelect() {
+  const sel = document.getElementById("designer-filter");
+  const prev = sel.value;
+  sel.innerHTML = '<option value="all">יומנים</option>';
+  DESIGNERS.forEach(d => {
+    const o = document.createElement("option"); o.value = d.id; o.textContent = d.name; sel.appendChild(o);
+  });
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+function buildModalDesigners() {
+  const sel = document.getElementById("f-designer");
+  const prev = sel.value;
+  sel.innerHTML = "";
+  DESIGNERS.forEach(d => {
+    const o = document.createElement("option"); o.value = d.id; o.textContent = d.name; sel.appendChild(o);
+  });
+  if ([...sel.options].some(o => o.value === prev)) sel.value = prev;
+  sel.onchange = updateAddressField;
+}
+
+function isInstallDiary() {
+  const id = document.getElementById("f-designer").value;
+  const d  = DESIGNERS.find(d => d.id === id);
+  return d?.name?.includes("התקנות");
+}
+
+function updateAddressField() {
+  document.getElementById("fg-address").style.display = isInstallDiary() ? "" : "none";
+}
+
+/* ─── Appointment modal ──────────────────────────── */
+function openNew(designerId, startTime, dateStr) {
+  editingId    = null;
+  modalDateStr = dateStr;
+  document.getElementById("modal-title").textContent = "פגישה חדשה";
+  document.getElementById("f-designer").value = designerId;
+  document.getElementById("f-client").value   = "";
+  document.getElementById("f-phone").value    = "";
+  setTime("f-start", startTime);
+  const [h, m] = startTime.split(":").map(Number);
+  setTime("f-end", `${String(Math.min(h+1,END_HOUR)).padStart(2,"0")}:${String(m).padStart(2,"0")}`);
+  document.getElementById("f-address").value  = "";
+  document.getElementById("f-notes").value    = "";
+  document.getElementById("f-summary").value  = "";
+  document.getElementById("btn-delete").style.display = "none";
+  updateAddressField();
+  updateWhatsAppBtn();
+  document.getElementById("modal-overlay").classList.add("open");
+  setTimeout(() => document.getElementById("f-client").focus(), 80);
+}
+
+function openEdit(apt) {
+  editingId    = apt.id;
+  modalDateStr = apt.date;
+  document.getElementById("modal-title").textContent = "עריכת פגישה";
+  document.getElementById("f-designer").value = apt.designerId;
+  document.getElementById("f-client").value   = apt.clientName || "";
+  document.getElementById("f-phone").value    = apt.phone || "";
+  setTime("f-start", apt.startTime);
+  setTime("f-end",   apt.endTime);
+  document.getElementById("f-address").value  = apt.address || "";
+  document.getElementById("f-notes").value    = apt.notes || "";
+  document.getElementById("f-summary").value  = apt.summary || "";
+  document.getElementById("btn-delete").style.display = "block";
+  updateAddressField();
+  updateWhatsAppBtn();
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+function closeModal() { document.getElementById("modal-overlay").classList.remove("open"); editingId = null; }
+
+function updateWhatsAppBtn() {
+  const phone = document.getElementById("f-phone").value.trim();
+  document.getElementById("btn-whatsapp").style.display = phone ? "flex" : "none";
+}
+
+window.sendWhatsApp = function() {
+  const phone    = document.getElementById("f-phone").value.trim().replace(/\D/g,"");
+  const client   = document.getElementById("f-client").value.trim();
+  const start    = getTime("f-start");
+  const end      = getTime("f-end");
+  const designerId = document.getElementById("f-designer").value;
+  const designer = DESIGNERS.find(d => d.id === designerId);
+
+  // Format date display
+  const parts  = modalDateStr ? modalDateStr.split("-") : dateKey().split("-");
+  const dateObj = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  const days   = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  const months = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const dateStr = `יום ${days[dateObj.getDay()]}, ${dateObj.getDate()} ב${months[dateObj.getMonth()]}`;
+
+  const address = document.getElementById("f-address").value.trim();
+  const msg = isInstallDiary()
+    ? `שלום ${client} :)\n\nתואמה התקנה לתאריך ושעה:\n* ${dateStr}\n* שעה: ${start} - ${end}\nבכתובת: ${address}\n\nטלפון לשינויים: 050-7141720\nWaze: https://waze.com/ul/hsv8s54crr\n\nאביה Kitchen`
+    : `שלום ${client} :)\n\nתזכורת לפגישה שלך:\n* ${dateStr}\n* שעה: ${start} - ${end}\n* עם ${designer?.name || ""}\n\nטלפון לשינויים: 050-7141720\nWaze: https://waze.com/ul/hsv8s54crr\n\nאביה Kitchen`;
+
+  // Israeli phone: 05X → 9725X
+  const intlPhone = phone.startsWith("0") ? "972" + phone.slice(1) : phone;
+  window.open(`https://wa.me/${intlPhone}?text=${encodeURIComponent(msg)}`, "_blank");
+};
+
+async function saveApt() {
+  const client = document.getElementById("f-client").value.trim();
+  if (!client) { document.getElementById("f-client").focus(); return; }
+  const data = {
+    date:       modalDateStr || dateKey(),
+    designerId: document.getElementById("f-designer").value,
+    clientName: client,
+    phone:      document.getElementById("f-phone").value.trim(),
+    startTime:  getTime("f-start"),
+    endTime:    getTime("f-end"),
+    address:    document.getElementById("f-address").value.trim(),
+    notes:      document.getElementById("f-notes").value.trim(),
+    summary:    document.getElementById("f-summary").value.trim(),
+  };
+  const isNew = !editingId;
+  try {
+    if (editingId) await updateDoc(doc(db, "appointments", editingId), data);
+    else           await addDoc(collection(db, "appointments"), data);
+    if (isNew) sendEmailNotification(data);
+    closeModal();
+  } catch (err) { alert("שגיאה בשמירה."); console.error(err); }
+}
+
+function sendEmailNotification(data) {
+  if (!EMAILJS_PUBLIC_KEY || !EMAILJS_SERVICE_ID || !EMAILJS_TEMPLATE_ID) return;
+  const designer = DESIGNERS.find(d => d.id === data.designerId);
+  if (!designer?.email) return;
+
+  const parts   = data.date.split("-");
+  const dateObj = new Date(+parts[0], +parts[1]-1, +parts[2]);
+  const days    = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+  const months  = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  const dateStr = `יום ${days[dateObj.getDay()]}, ${dateObj.getDate()} ב${months[dateObj.getMonth()]}`;
+
+  emailjs.init(EMAILJS_PUBLIC_KEY);
+  emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    to_email:     designer.email,
+    to_name:      designer.name,
+    client_name:  data.clientName,
+    client_phone: data.phone || "לא צוין",
+    date:         dateStr,
+    start_time:   data.startTime,
+    end_time:     data.endTime,
+    notes:        data.notes || "—",
+  }).catch(err => console.error("EmailJS error:", err));
+}
+
+async function deleteApt() {
+  if (!editingId || !confirm("למחוק את הפגישה?\nניתן לשחזר אותה מהגדרות → פח מחזור.")) return;
+  try {
+    const aptRef  = doc(db, "appointments", editingId);
+    const aptSnap = await getDoc(aptRef);
+    if (aptSnap.exists()) {
+      await setDoc(doc(db, "deleted_appointments", editingId), {
+        ...aptSnap.data(), deletedAt: new Date().toISOString()
+      });
+      await deleteDoc(aptRef);
+    }
+    closeModal();
+  } catch (err) { alert("שגיאה במחיקה."); console.error(err); }
+}
+
+/* ─── Time selects ───────────────────────────────── */
+function buildTimeSelects() {
+  ["f-start-h","f-end-h"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    for (let h = START_HOUR; h <= END_HOUR; h++) {
+      const o = document.createElement("option");
+      o.value = String(h).padStart(2,"0");
+      o.textContent = String(h).padStart(2,"0");
+      sel.appendChild(o);
+    }
+  });
+  ["f-start-m","f-end-m"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    ["00","15","30","45"].forEach(m => {
+      const o = document.createElement("option");
+      o.value = m; o.textContent = m; sel.appendChild(o);
+    });
+  });
+}
+
+function getTime(prefix) {
+  return `${document.getElementById(prefix+"-h").value}:${document.getElementById(prefix+"-m").value}`;
+}
+
+function setTime(prefix, timeStr) {
+  if (!timeStr) return;
+  const [h, m] = timeStr.split(":");
+  document.getElementById(prefix+"-h").value = h;
+  const mins = ["00","15","30","45"];
+  const rounded = mins.reduce((prev, cur) =>
+    Math.abs(parseInt(cur)-parseInt(m)) < Math.abs(parseInt(prev)-parseInt(m)) ? cur : prev);
+  document.getElementById(prefix+"-m").value = rounded;
+}
+
+/* ─── Search ─────────────────────────────────────── */
+function openSearch() {
+  document.getElementById("search-input").value = "";
+  document.getElementById("search-results").innerHTML = "";
+  document.getElementById("search-overlay").classList.add("open");
+  setTimeout(() => document.getElementById("search-input").focus(), 80);
+}
+function closeSearch() { document.getElementById("search-overlay").classList.remove("open"); }
+
+window.doSearch = async function() {
+  const term = document.getElementById("search-input").value.trim();
+  if (!term) return;
+  const resultsEl = document.getElementById("search-results");
+  resultsEl.innerHTML = `<div class="search-empty">מחפש...</div>`;
+
+  const cleanPhone = term.replace(/\D/g, "");
+  const isPhone    = cleanPhone.length >= 7;
+
+  // Query by phone or by name prefix
+  const { getDocs: gd, query: q2, collection: col2, where: wh2, orderBy: ob } = await import("https://www.gstatic.com/firebasejs/12.16.0/firebase-firestore.js");
+
+  let results = [];
+
+  if (isPhone) {
+    const snap = await gd(q2(col2(db, "appointments"), wh2("phone", "==", term.replace(/-/g,""))));
+    const snap2 = await gd(q2(col2(db, "appointments"), wh2("phone", "==", cleanPhone)));
+    const seen = new Set();
+    [...snap.docs, ...snap2.docs].forEach(d => {
+      if (!seen.has(d.id)) { seen.add(d.id); results.push({ id: d.id, ...d.data() }); }
+    });
+  }
+
+  // Also search by name (prefix)
+  const nameTerm = term;
+  const nameSnap = await gd(q2(col2(db, "appointments"),
+    wh2("clientName", ">=", nameTerm),
+    wh2("clientName", "<=", nameTerm + "")));
+  nameSnap.docs.forEach(d => {
+    if (!results.find(r => r.id === d.id)) results.push({ id: d.id, ...d.data() });
+  });
+
+  // Sort by date desc
+  results.sort((a, b) => b.date.localeCompare(a.date));
+
+  if (results.length === 0) {
+    resultsEl.innerHTML = `<div class="search-empty">לא נמצאו פגישות</div>`;
+    return;
+  }
+
+  resultsEl.innerHTML = "";
+  results.forEach(apt => {
+    const designer = DESIGNERS.find(d => d.id === apt.designerId);
+    const parts    = apt.date.split("-");
+    const dateObj  = new Date(+parts[0], +parts[1]-1, +parts[2]);
+    const days     = ["ראשון","שני","שלישי","רביעי","חמישי","שישי","שבת"];
+    const months   = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+    const dateStr  = `יום ${days[dateObj.getDay()]}, ${dateObj.getDate()} ב${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+
+    const el = document.createElement("div");
+    el.className = "search-result";
+    el.innerHTML = `
+      <div class="search-dot" style="background:${designer?.color || "#ccc"}"></div>
+      <div class="search-info">
+        <div class="search-client">${apt.clientName}${apt.phone ? ` · ${apt.phone}` : ""}</div>
+        <div class="search-meta">${dateStr} · ${apt.startTime}–${apt.endTime} · ${designer?.name || ""}</div>
+        ${apt.summary ? `<div class="search-meta" style="color:var(--primary);margin-top:2px">✓ יש סיכום</div>` : ""}
+      </div>
+      <span style="color:var(--muted);font-size:.8rem">עריכה ›</span>
+    `;
+    el.addEventListener("click", () => {
+      closeSearch();
+      // Navigate to the appointment's date
+      currentDate = dateObj;
+      renderDateDisplay();
+      rebuildAndSubscribe();
+      // Open edit modal after short delay for the view to load
+      setTimeout(() => openEdit(apt), 400);
+    });
+    resultsEl.appendChild(el);
+  });
+};
+
+/* ─── Admin password prompt ──────────────────────── */
+function openAdminPrompt() {
+  document.getElementById("admin-pwd-input").value = "";
+  document.getElementById("admin-pwd-error").style.display = "none";
+  document.getElementById("admin-pwd-overlay").classList.add("open");
+  setTimeout(() => document.getElementById("admin-pwd-input").focus(), 80);
+}
+function closeAdminPrompt() {
+  document.getElementById("admin-pwd-overlay").classList.remove("open");
+}
+function confirmAdminPwd() {
+  const val = document.getElementById("admin-pwd-input").value;
+  if (val === ADMIN_PASSWORD) {
+    closeAdminPrompt();
+    openSettings();
+  } else {
+    document.getElementById("admin-pwd-error").style.display = "block";
+    document.getElementById("admin-pwd-input").value = "";
+    document.getElementById("admin-pwd-input").focus();
+  }
+}
+
+/* ─── Settings modal ─────────────────────────────── */
+const PRESET_COLORS = ["#8B4513","#C4956A","#6B8E5A","#A0522D","#CD853F","#8B7355","#C0622A","#7D9B6B"];
+
+function openSettings()  {
+  renderDesignersList();
+  document.getElementById("settings-overlay").classList.add("open");
+}
+function closeSettings() { document.getElementById("settings-overlay").classList.remove("open"); }
+
+function renderDesignersList() {
+  const list = document.getElementById("designers-list");
+  list.innerHTML = "";
+  const draft = {
+    active:  DESIGNERS.map(d => ({ ...d })),
+    deleted: DELETED_DESIGNERS.map(d => ({ ...d }))
+  };
+  list.dataset.draft = JSON.stringify(draft);
+  draft.active.forEach((d, i) => appendDesignerRow(list, d, i));
+}
+
+function appendDesignerRow(list, d, i) {
+  const draft      = JSON.parse(list.dataset.draft);
+  const total      = draft.active.length;
+  const row        = document.createElement("div"); row.className = "designer-row"; row.dataset.index = i;
+  const colorBtn   = document.createElement("div"); colorBtn.className = "color-dot"; colorBtn.style.background = d.color; colorBtn.title = "שנה צבע";
+  const colorInput = document.createElement("input"); colorInput.type = "color"; colorInput.className = "color-picker-hidden"; colorInput.value = d.color;
+  colorInput.addEventListener("input", e => { colorBtn.style.background = e.target.value; updateDraft(list, i, "color", e.target.value); });
+  colorBtn.addEventListener("click", () => colorInput.click());
+  const nameInput = document.createElement("input"); nameInput.type = "text"; nameInput.value = d.name; nameInput.placeholder = "שם";
+  nameInput.addEventListener("input", e => updateDraft(list, i, "name", e.target.value));
+  const emailInput = document.createElement("input"); emailInput.type = "email"; emailInput.value = d.email || ""; emailInput.placeholder = "מייל";
+  emailInput.style.cssText = "flex:1;padding:8px 10px;border:1.5px solid var(--border);border-radius:8px;font-size:.88rem;direction:ltr;margin-top:4px";
+  emailInput.addEventListener("input", e => updateDraft(list, i, "email", e.target.value));
+  const removeBtn = document.createElement("button"); removeBtn.className = "btn-remove-designer"; removeBtn.innerHTML = "×";
+  removeBtn.addEventListener("click", () => {
+    let dr = JSON.parse(list.dataset.draft);
+    const removed = dr.active.splice(i, 1)[0];
+    removed.deletedAt = new Date().toISOString();
+    dr.deleted.push(removed);
+    list.dataset.draft = JSON.stringify(dr);
+    list.innerHTML = "";
+    dr.active.forEach((dd, ii) => appendDesignerRow(list, dd, ii));
+    renderTrashDesigners();
+  });
+  // Order buttons
+  const orderWrap = document.createElement("div"); orderWrap.className = "designer-order-btns";
+  const upBtn   = document.createElement("button"); upBtn.className = "btn-order"; upBtn.textContent = "▲"; upBtn.disabled = i === 0;
+  const downBtn = document.createElement("button"); downBtn.className = "btn-order"; downBtn.textContent = "▼"; downBtn.disabled = i === total - 1;
+  upBtn.addEventListener("click",   () => moveDesigner(list, i, -1));
+  downBtn.addEventListener("click", () => moveDesigner(list, i,  1));
+  orderWrap.appendChild(upBtn); orderWrap.appendChild(downBtn);
+  const nameWrap = document.createElement("div");
+  nameWrap.style.cssText = "flex:1;display:flex;flex-direction:column;gap:0";
+  nameWrap.appendChild(nameInput); nameWrap.appendChild(emailInput);
+  row.appendChild(orderWrap); row.appendChild(colorBtn); row.appendChild(colorInput); row.appendChild(nameWrap); row.appendChild(removeBtn);
+  list.appendChild(row);
+}
+
+function moveDesigner(list, i, dir) {
+  const draft = JSON.parse(list.dataset.draft);
+  const j = i + dir;
+  if (j < 0 || j >= draft.active.length) return;
+  [draft.active[i], draft.active[j]] = [draft.active[j], draft.active[i]];
+  list.dataset.draft = JSON.stringify(draft);
+  list.innerHTML = "";
+  draft.active.forEach((d, ii) => appendDesignerRow(list, d, ii));
+}
+
+function updateDraft(list, i, key, value) {
+  const draft = JSON.parse(list.dataset.draft); draft.active[i][key] = value; list.dataset.draft = JSON.stringify(draft);
+}
+
+function addDesignerRow() {
+  const list  = document.getElementById("designers-list");
+  const draft = JSON.parse(list.dataset.draft);
+  const newD  = { id: String(Date.now()), name: "", color: PRESET_COLORS[draft.active.length % PRESET_COLORS.length] };
+  draft.active.push(newD); list.dataset.draft = JSON.stringify(draft);
+  appendDesignerRow(list, newD, draft.active.length - 1);
+  setTimeout(() => list.lastElementChild?.querySelector("input[type=text]")?.focus(), 50);
+}
+
+/* ─── Trash / Recycle bin ────────────────────────── */
+window.toggleTrash = function() {
+  document.getElementById("settings-overlay").classList.remove("open");
+  showTrashTab("designers");
+  document.getElementById("trash-overlay").classList.add("open");
+};
+
+window.closeTrash = function() {
+  document.getElementById("trash-overlay").classList.remove("open");
+  openSettings();
+};
+
+window.showTrashTab = function(tab) {
+  document.getElementById("trash-designers-list").style.display = tab === "designers" ? "" : "none";
+  document.getElementById("trash-apts-list").style.display      = tab === "apts"      ? "" : "none";
+  document.getElementById("trash-tab-designers").classList.toggle("active", tab === "designers");
+  document.getElementById("trash-tab-apts").classList.toggle("active", tab === "apts");
+  if (tab === "apts") loadTrashApts();
+  else renderTrashDesigners();
+};
+
+function renderTrashDesigners() {
+  const list  = document.getElementById("designers-list");
+  const draft = JSON.parse(list.dataset.draft || '{"active":[],"deleted":[]}');
+  const el    = document.getElementById("trash-designers-list");
+  if (!el) return;
+  if (draft.deleted.length === 0) {
+    el.innerHTML = `<div class="trash-empty">אין יומנים שנמחקו</div>`; return;
+  }
+  el.innerHTML = "";
+  draft.deleted.forEach((d, i) => {
+    const row = document.createElement("div"); row.className = "trash-row";
+    const dot = `<div class="color-dot" style="background:${d.color};flex-shrink:0"></div>`;
+    const deletedDate = d.deletedAt ? new Date(d.deletedAt).toLocaleDateString("he-IL") : "";
+    row.innerHTML = `${dot}<div class="trash-info"><div class="trash-name">${d.name}</div>${deletedDate ? `<div class="trash-meta">נמחק: ${deletedDate}</div>` : ""}</div>
+      <button class="trash-restore-btn" onclick="restoreDesigner(${i})">שחזור</button>
+      <button class="trash-perm-btn" onclick="permanentDeleteDesigner(${i})">מחיקה</button>`;
+    el.appendChild(row);
+  });
+}
+
+window.restoreDesigner = function(i) {
+  const list  = document.getElementById("designers-list");
+  const draft = JSON.parse(list.dataset.draft);
+  const restored = draft.deleted.splice(i, 1)[0];
+  delete restored.deletedAt;
+  draft.active.push(restored);
+  list.dataset.draft = JSON.stringify(draft);
+  list.innerHTML = "";
+  draft.active.forEach((d, ii) => appendDesignerRow(list, d, ii));
+  renderTrashDesigners();
+};
+
+window.permanentDeleteDesigner = function(i) {
+  if (!confirm("למחוק את היומן לצמיתות? לא ניתן לשחזר.")) return;
+  const list  = document.getElementById("designers-list");
+  const draft = JSON.parse(list.dataset.draft);
+  draft.deleted.splice(i, 1);
+  list.dataset.draft = JSON.stringify(draft);
+  renderTrashDesigners();
+};
+
+async function loadTrashApts() {
+  const el = document.getElementById("trash-apts-list");
+  el.innerHTML = `<div class="trash-empty">טוען...</div>`;
+  try {
+    const snap = await getDocs(collection(db, "deleted_appointments"));
+    const apts = [];
+    snap.forEach(d => apts.push({ id: d.id, ...d.data() }));
+    apts.sort((a, b) => (b.deletedAt || "").localeCompare(a.deletedAt || ""));
+    renderTrashApts(apts);
+  } catch (err) { el.innerHTML = `<div class="trash-empty">שגיאה בטעינה</div>`; console.error(err); }
+}
+
+function renderTrashApts(apts) {
+  const el = document.getElementById("trash-apts-list");
+  if (apts.length === 0) { el.innerHTML = `<div class="trash-empty">אין פגישות שנמחקו</div>`; return; }
+  const MONTHS = ["ינואר","פברואר","מרץ","אפריל","מאי","יוני","יולי","אוגוסט","ספטמבר","אוקטובר","נובמבר","דצמבר"];
+  el.innerHTML = "";
+  apts.forEach(apt => {
+    const designer = DESIGNERS.find(d => d.id === apt.designerId) ||
+                     DELETED_DESIGNERS.find(d => d.id === apt.designerId);
+    const parts    = (apt.date || "").split("-");
+    const dateStr  = parts.length === 3
+      ? `${+parts[2]} ${MONTHS[+parts[1]-1]} ${parts[0]}`
+      : apt.date || "";
+    const deletedDate = apt.deletedAt ? new Date(apt.deletedAt).toLocaleDateString("he-IL") : "";
+    const row = document.createElement("div"); row.className = "trash-row";
+    row.innerHTML = `
+      <div class="color-dot" style="background:${designer?.color||"#ccc"};flex-shrink:0"></div>
+      <div class="trash-info">
+        <div class="trash-name">${apt.clientName || ""}</div>
+        <div class="trash-meta">${dateStr} · ${apt.startTime||""}–${apt.endTime||""} · ${designer?.name||""}</div>
+        ${deletedDate ? `<div class="trash-meta">נמחק: ${deletedDate}</div>` : ""}
+      </div>
+      <button class="trash-restore-btn" onclick="restoreApt('${apt.id}')">שחזור</button>
+      <button class="trash-perm-btn" onclick="permanentDeleteApt('${apt.id}')">מחיקה</button>`;
+    el.appendChild(row);
+  });
+}
+
+window.restoreApt = async function(id) {
+  try {
+    const ref  = doc(db, "deleted_appointments", id);
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const data = { ...snap.data() };
+    delete data.deletedAt;
+    await setDoc(doc(db, "appointments", id), data);
+    await deleteDoc(ref);
+    await loadTrashApts();
+  } catch (err) { alert("שגיאה בשחזור."); console.error(err); }
+};
+
+window.permanentDeleteApt = async function(id) {
+  if (!confirm("למחוק את הפגישה לצמיתות? לא ניתן לשחזר.")) return;
+  try {
+    await deleteDoc(doc(db, "deleted_appointments", id));
+    await loadTrashApts();
+  } catch (err) { alert("שגיאה במחיקה."); console.error(err); }
+};
+
+window.downloadBackup = async function() {
+  try {
+    const [aptsSnap, settSnap] = await Promise.all([
+      getDocs(collection(db, "appointments")),
+      getDocs(collection(db, "settings"))
+    ]);
+    const data = {
+      date: new Date().toISOString(),
+      appointments: aptsSnap.docs.map(d => ({ id: d.id, ...d.data() })),
+      settings: {}
+    };
+    settSnap.docs.forEach(d => { data.settings[d.id] = d.data(); });
+
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: "application/json" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href     = url;
+    a.download = `backup_${new Date().toISOString().slice(0,10)}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch (err) { alert("שגיאה בגיבוי."); console.error(err); }
+};
+
+window.restoreBackup = async function(input) {
+  const file = input.files[0];
+  input.value = "";
+  if (!file) return;
+
+  const text = await file.text();
+  let data;
+  try { data = JSON.parse(text); } catch { alert("קובץ לא תקין."); return; }
+
+  const aptCount = data.appointments?.length || 0;
+  if (!confirm(`שחזור מגיבוי מתאריך ${(data.date || "").slice(0,10)}\n${aptCount} פגישות\n\nכל הפגישות הקיימות יימחקו ויוחלפו בגיבוי.\n\nלהמשיך?`)) return;
+
+  try {
+    // Delete existing appointments
+    const existingSnap = await getDocs(collection(db, "appointments"));
+    await Promise.all(existingSnap.docs.map(d => deleteDoc(doc(db, "appointments", d.id))));
+
+    // Restore appointments from backup
+    await Promise.all((data.appointments || []).map(apt => {
+      const { id, ...aptData } = apt;
+      return setDoc(doc(db, "appointments", id), aptData);
+    }));
+
+    // Restore settings
+    if (data.settings) {
+      await Promise.all(Object.entries(data.settings).map(([key, val]) =>
+        setDoc(doc(db, "settings", key), val)
+      ));
+    }
+
+    alert(`שוחזרו ${aptCount} פגישות בהצלחה.`);
+    closeSettings();
+    await loadDesigners();
+    buildFilterSelect(); buildModalDesigners();
+    rebuildAndSubscribe();
+  } catch (err) { alert("שגיאה בשחזור."); console.error(err); }
+};
+
+async function saveSettings() {
+  const list    = document.getElementById("designers-list");
+  const draft   = JSON.parse(list.dataset.draft);
+  const active  = draft.active.filter(d => d.name.trim() !== "");
+  if (active.length === 0) { alert("יש להגדיר לפחות מעצבת אחת."); return; }
+  try {
+    await setDoc(doc(db, "settings", "designers"), { list: active, deletedList: draft.deleted });
+    DESIGNERS = active; DELETED_DESIGNERS = draft.deleted;
+    activeFilter = "all";
+    document.getElementById("designer-filter").value = "all";
+    buildFilterSelect(); buildModalDesigners();
+    if (viewMode === "day") { buildDayGrid(); renderApts(lastApts); }
+    else                    { buildWeekGrid(); renderWeekApts(lastApts); }
+    closeSettings();
+  } catch (err) { alert("שגיאה בשמירה."); console.error(err); }
+}
+</script>
+</body>
+</html>
