@@ -356,9 +356,8 @@
     <div class="login-logo">📅</div>
     <h1>אביה עיצובים בעץ</h1>
     <p>יומן פגישות</p>
-    <input type="password" id="pwd-input" placeholder="סיסמה" autocomplete="current-password">
-    <button id="login-btn">כניסה</button>
-    <div class="login-error" id="login-error">סיסמה שגויה, נסה שוב</div>
+    <button id="login-btn">כניסה להדגמה</button>
+    <div class="login-error" id="login-error"></div>
   </div>
 </div>
 
@@ -540,7 +539,6 @@ import { getFirestore, collection, doc, query, where,
 /* ═══════════════════════════════════════════════════
    ⚙️  שנה כאן רק את הסיסמה
    ═══════════════════════════════════════════════════ */
-const APP_PASSWORD   = "demo";   // ← סיסמת כניסה לאפליקציה
 const ADMIN_PASSWORD = "admin";  // ← סיסמת כניסה להגדרות
 
 // ─── EmailJS — מלא את הפרטים אחרי ההרשמה ───────────
@@ -592,23 +590,15 @@ function today() { const d = new Date(); d.setHours(0,0,0,0); return d; }
 
 /* ─── Auth ───────────────────────────────────────── */
 document.getElementById("login-btn").addEventListener("click", doLogin);
-document.getElementById("pwd-input").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 document.getElementById("btn-logout").addEventListener("click", () => { if (unsubscribe) unsubscribe(); signOut(auth); });
 
 function doLogin() {
-  const val = document.getElementById("pwd-input").value;
   const err = document.getElementById("login-error");
-  if (val === APP_PASSWORD) {
-    err.style.display = "none";
-    signInAnonymously(auth).catch(() => {
-      err.textContent = "שגיאת חיבור. בדוק שהאימות האנונימי הופעל ב-Firebase.";
-      err.style.display = "block";
-    });
-  } else {
+  err.style.display = "none";
+  signInAnonymously(auth).catch(() => {
+    err.textContent = "שגיאת חיבור. בדוק שהאימות האנונימי הופעל ב-Firebase.";
     err.style.display = "block";
-    document.getElementById("pwd-input").value = "";
-    document.getElementById("pwd-input").focus();
-  }
+  });
 }
 
 onAuthStateChanged(auth, user => {
@@ -619,7 +609,6 @@ onAuthStateChanged(auth, user => {
   } else {
     document.getElementById("login-screen").style.display = "flex";
     document.getElementById("app").style.display = "none";
-    document.getElementById("pwd-input").value = "";
   }
 });
 
