@@ -354,7 +354,7 @@
 <div id="login-screen">
   <div class="login-box">
     <div class="login-logo">📅</div>
-    <h1>אביה עיצובים בעץ</h1>
+    <h1>יומן משותף</h1>
     <p>יומן פגישות</p>
     <button id="login-btn">כניסה להדגמה</button>
     <div class="login-error" id="login-error"></div>
@@ -367,7 +367,7 @@
 </div>
 <div id="app">
   <div class="app-header">
-    <span class="header-brand">אביה עיצובים בעץ</span>
+    <span class="header-brand">יומן משותף</span>
     <div class="date-nav">
       <button id="btn-prev">&#8594;</button>
       <span id="date-display"></span>
@@ -1017,8 +1017,8 @@ window.sendWhatsApp = function() {
 
   const address = document.getElementById("f-address").value.trim();
   const msg = isInstallDiary()
-    ? `שלום ${client} :)\n\nתואמה התקנה לתאריך ושעה:\n* ${dateStr}\n* שעה: ${start} - ${end}\nבכתובת: ${address}\n\nטלפון לשינויים: 050-7141720\nWaze: https://waze.com/ul/hsv8s54crr\n\nאביה Kitchen`
-    : `שלום ${client} :)\n\nתזכורת לפגישה שלך:\n* ${dateStr}\n* שעה: ${start} - ${end}\n* עם ${designer?.name || ""}\n\nטלפון לשינויים: 050-7141720\nWaze: https://waze.com/ul/hsv8s54crr\n\nאביה Kitchen`;
+    ? `שלום ${client} :)\n\nתואמה התקנה לתאריך ושעה:\n* ${dateStr}\n* שעה: ${start} - ${end}\nבכתובת: ${address}\n\nיומן משותף`
+    : `שלום ${client} :)\n\nתזכורת לפגישה שלך:\n* ${dateStr}\n* שעה: ${start} - ${end}\n* עם ${designer?.name || ""}\n\nיומן משותף`;
 
   // Israeli phone: 05X → 9725X
   const intlPhone = phone.startsWith("0") ? "972" + phone.slice(1) : phone;
