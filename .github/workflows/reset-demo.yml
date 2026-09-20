@@ -1,0 +1,24 @@
+name: Reset demo data
+
+on:
+  schedule:
+    - cron: '0 1 * * *'   # 01:00 UTC, early morning in Israel
+  workflow_dispatch:
+
+permissions:
+  actions: write
+
+jobs:
+  reset:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Reset demo database
+        run: node .github/scripts/reset-demo.mjs
+      - name: Keep the schedule alive (GitHub pauses cron after 60 days without repo activity)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh api -X PUT "repos/${{ github.repository }}/actions/workflows/reset-demo.yml/enable" || true
